@@ -1,38 +1,89 @@
 from PIL import Image
 from numpy import asarray, reshape
+from colorama import Fore, Back, Style
 
-image = Image.open("kingfisher.jpg")
 
-#check the width to ensure it is no more than 200
-## 200 lines are the limit of what the commandline can print without distorting the image
-if image.width > 200:
-    new_image = image.resize((200, image.height)) ## resize the image to 200 px in width
-    new_image.save(f"{image}_resized.jpg") 
+ascii_key = '`^",:;Il!i~+_-?][}{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$'
 
-pixel_size = [str(i) for i in new_image.size]
-print("new_image successfully loaded")
-print(f" new_image size : " + " X ".join(pixel_size))
 
-# the ascii string used to rank pixels from dimmest to brightest
-brightness_test = "`^\",:;Il!i~+_-?][}{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$"
+def image_array(image):
+    """
+    resize the image to a width of 200 pixels.
+    convert the image to a one-dimensional array of pixels
 
-pixels = new_image.getdata() #get the pixels of the image in form of a single dimensional array
-#pixels are in lists of three, i.e R G B. 
-# average the three colors to get the brightness of the pixel 
-brighness_level = [sum(i) // 3 for i in pixels]
+    Args:
+        image: This is the image passed to the function
 
-#substitute the average of the pixels with their equivalent from the ascii string
-#print the character substituted twice to avoid getting a squashed image
-final_new_image = [str(brightness_test[int(i // 3.93)]) * 2   for i in brighness_level]
+    Returns:
+        pixel_array: Array of pixels gotten from using the .getdata() method
+    """
+    if image.width > 200:
+        image = image.resize(
+            (200, image.height)
+        )  
+    else:
+        image = image
+    pixel_array = image.getdata()
+    return pixel_array
 
-#convert the one dimensional list to 2-d to ensure the columns are 200. 
-# not to exceed the sweet spot of the command line printing
-result = reshape(asarray(final_new_image), (-1, 200)).tolist()
 
-#print the image
-##NB: USE CTRL+- RO MINIMIZE YOUR COMMANDLINE FONT TILL EACH ROW SPANS ONE LINE
-for i in range(len(result)):
-    for j in range(len(result[1])):
-        print(result[i][j], end="")
-    print()
+def get_brightness(pixel_array, algorithm="average"):
+    """
+    calculate the  brightness of each RGB array by using different formulas
+
+    Args:
+        pixel_array: array of pixels returned after converting the image to an array
+        algorithm: Formula used to calculate the brighness of a pixel
+
+    Returns:
+        brightness_array: array containing averaged pixels
+    """
+    if algorithm == "average":
+        brightness_array = [(max(i) + min(i)) // 2 for i in pixel_array]
+    elif algorithm == "luminosity":
+        brightness_array = [sum(i) // 3 for i in pixel_array]
+    elif algorithm == "lightness":
+        brightness_array = [
+            (0.21 * i[0] + 0.72 * i[1] + 0.07 * i[2]) for i in pixel_array
+        ]
+    return brightness_array
+
+
+def pixels_to_ascii(brightness_array):
+    """
+    convert the array of pixels to an array of ascii characters
+    convert the one-dimensional array to a two-dimensional array using reshape method of numpy
+
+    Args:
+        brightness_array: array containing averaged pixels
+
+    Returns:
+        result: two-dimensional array of ascii characters
+    """
+    final_image = [str(ascii_key[int(i // 3.93)]) * 2 for i in brightness_array]
+    result = reshape(asarray(final_image), (-1, 200)).tolist()
+    return result
+
+
+def print_ascii(result):
+    """
+    print the ascii characters on the command line
     
+    Args:
+        result: two-dimensional array of ascii characters
+    """
+    for i in range(len(result)):
+        for j in range(len(result[1])):
+            print(Fore.GREEN + result[i][j], end="")
+        print()
+
+
+image = Image.open("images/re_zebra.jpg")
+image_matrix = image_array(image)
+brightness = get_brightness(image_matrix, "luminosity")
+ascii_array = pixels_to_ascii(brightness)
+print_ascii(ascii_array)
+
+
+
+##NB: USE CTRL+- RO MINIMIZE YOUR COMMANDLINE FONT TILL EACH ROW SPANS ONE LINE
